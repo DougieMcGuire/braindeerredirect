@@ -395,7 +395,6 @@ function show(n){
 
 function stripAt(v){ return String(v||"").replace(/^@+/,"").trim(); }
 function withAt(v){ v=stripAt(v); return v?"@"+v:v; }
-function validUser(v){ const s=stripAt(v); return /^[a-zA-Z0-9._]{2,24}$/.test(s); }
 
 function genId(){
   return "BD" + Date.now().toString(36).toUpperCase().slice(-6) + Math.random().toString(36).toUpperCase().slice(2,4);
@@ -420,16 +419,8 @@ $("go1").onclick = () => {
     showError("Enter your username", "Please enter your <b>current TikTok username</b> so we know which account to update.", 1);
     return;
   }
-  if(!validUser(u)){
-    showError("Username format", "Usernames can only have letters, numbers, periods and underscores (2–24 characters).", 1);
-    return;
-  }
   if(!n){
     showError("Enter the name you want", "Please enter the <b>new username you want to claim</b>.", 1);
-    return;
-  }
-  if(!validUser(n)){
-    showError("New username format", "The username you want can only have letters, numbers, periods and underscores (2–24 characters).", 1);
     return;
   }
   if(u.toLowerCase() === n.toLowerCase()){
